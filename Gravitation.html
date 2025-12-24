@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gravitation｜萬有引力</title>
+<style>
+/* ===== Theme ===== */
+:root{
+  /* Dark (default) */
+  --bg:#0b1020; --panel:#11162f; --card:#131a38; --text:#eaf0ff; --muted:#9fb0d0;
+  --border:rgba(255,255,255,.12); --brand:#6ee7ff; --brand2:#a78bfa; --accent:#34d399;
+  --shadow:0 10px 30px rgba(0,0,0,.35); --r:16px;
+  --trail:rgba(255,255,255,.9); --grid:rgba(255,255,255,.06);
+}
+:root.light{
+  /* Light */
+  --bg:#f5f7fb; --panel:#ffffff; --card:#ffffff; --text:#0b1020; --muted:#566076;
+  --border:rgba(0,0,0,.12); --brand:#06b6d4; --brand2:#8b5cf6; --accent:#10b981;
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+  --trail:rgba(18,30,60,.9); --grid:rgba(0,0,0,.08);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; padding:22px 14px; color:var(--text);
+  font-family:ui-sans-serif,system-ui,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei";
+  background:
+    radial-gradient(1100px 650px at 0% -10%, color-mix(in oklab,var(--brand) 18%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, color-mix(in oklab,var(--brand2) 20%, transparent), transparent 60%),
+    var(--bg);
+}
+.container{max-width:1150px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:12px;box-shadow:var(--shadow)}
+h1{margin:0 0 6px;font-size:28px}
+.sub{color:var(--muted);font-size:14px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{background:color-mix(in oklab,var(--card) 60%, transparent);border:1px solid var(--border);padding:4px 10px;border-radius:999px;font-size:12px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.header-right{display:flex;gap:8px;align-items:center}
+button,select{height:36px;border-radius:10px;border:1px solid var(--border);background:#10173a;color:#eaf0ff;padding:0 10px;cursor:pointer}
+:root.light button,:root.light select{background:#f8fafc;color:var(--text)}
+button.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#05222b;border-color:transparent}
+button:hover{filter:brightness(1.06)}
+button:disabled{opacity:.55;cursor:not-allowed}
+
+.grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-top:14px}
+@media (max-width:980px){.grid2{grid-template-columns:1fr}}
+
+.row{display:flex;align-items:center;gap:10px;margin:8px 0}
+label{font-size:14px;color:#b8c6e3}
+:root.light label{color:#465167}
+.value{margin-left:auto}
+input[type=range]{width:100%}
+hr.sep{border:none;height:1px;background:var(--border);margin:10px 0}
+.canvas-wrap{margin-top:14px}
+
+/* canvases */
+#space{width:100%;height:520px;border:1px dashed var(--border);border-radius:12px;display:block;
+  background:radial-gradient(circle at 50% 50%,#000 25%,#07102a 85%)}
+:root.light #space{background:radial-gradient(circle at 50% 50%,#dfe8ff 8%,#eef2ff 55%,#f7fafc 100%)}
+#energy{width:100%;height:220px;border:1px dashed var(--border);border-radius:12px;display:block;margin-top:8px;background:#0e1430}
+:root.light #energy{background:#f8fbff}
+
+.k{color:#60a5fa}.u{color:#fca5a5}.e{color:#34d399}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px}
+.item .label{font-size:12px;color:#b8c6e3}
+:root.light .item .label{color:#566076}
+.item .val{font-size:18px;font-weight:800}
+.footer{color:var(--muted);font-size:12px;text-align:center;margin-top:16px}
+
+/* ===== Tabs ===== */
+.tabs{margin-top:14px}
+.tab-list{display:flex;gap:8px;flex-wrap:wrap}
+.tab-list .tab{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  border-radius:10px;padding:8px 14px;font-size:15px;cursor:pointer
+}
+.tab-list .tab[aria-selected="true"]{
+  background:linear-gradient(135deg, color-mix(in oklab,var(--brand) 25%, transparent), color-mix(in oklab,var(--brand2) 25%, transparent));
+  color:var(--text); box-shadow:0 0 12px color-mix(in oklab,var(--brand) 35%, transparent)
+}
+.tab-panel{display:none;margin-top:10px;font-size:17px;line-height:1.8}
+.tab-panel.active{display:block;animation:fade .2s ease}
+@keyframes fade {from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+.formula-block{text-align:center;font-size:19px;background:color-mix(in oklab,var(--card) 70%, transparent);border:1px dashed var(--border);border-radius:10px;margin:10px 0;padding:10px}
+#panel-quiz ol li{
+  background:color-mix(in oklab,var(--card) 65%, transparent); border-left:4px solid var(--brand2);
+  padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:17px; font-weight:500
+}
+</style>
+
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <section class="card header">
+    <div>
+      <h1>Gravitation｜萬有引力</h1>
+      <div class="sub">太陽固定中央，僅 1 顆行星；讀數採科學記號。</div>
+      <div class="badges"><span class="badge">單行星</span><span class="badge">中央太陽</span><span class="badge">速度/加速度/軌跡 開關</span></div>
+    </div>
+    <div class="header-right">
+      <button id="themeBtn" class="primary" aria-label="切換主題">🌓 主題</button>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <!-- Controls -->
+    <div class="card">
+      <h3 style="margin:6px 0 8px">控制列</h3>
+      <div class="row"><label>時間倍率 × <span class="value" id="timeVal">1.0</span></label><input id="time" type="range" min="0.1" max="5" step="0.1" value="1"></div>
+      <div class="row"><label>尾跡長度（點數）<span class="value" id="trailVal">800</span></label><input id="trail" type="range" min="100" max="1500" step="50" value="800"></div>
+      <div class="row">
+        <label>顯示</label>
+        <label><input type="checkbox" id="showTrail" checked> 軌跡</label>
+        <label><input type="checkbox" id="showV" checked> 速度</label>
+        <label><input type="checkbox" id="showA" checked> 加速度</label>
+        <label><input type="checkbox" id="showGrid"> 網格</label>
+      </div>
+      <hr class="sep">
+      <h3 style="margin:6px 0 8px">新增行星（上限 1 顆）</h3>
+      <div class="row"><label>半徑 r（百萬 km）<span class="value" id="rVal">150</span></label><input id="r0" type="range" min="30" max="500" step="5" value="150"></div>
+      <div class="row"><label>初速 v（km/s）<span class="value" id="vVal">30</span></label><input id="v0" type="range" min="0" max="80" step="1" value="30"></div>
+      <div class="row"><label>速度方向</label>
+        <select id="vdir"><option value="tangent">切向</option><option value="radial">徑向</option><option value="custom">自訂角</option></select>
+      </div>
+      <div class="row" id="customRow" style="display:none"><label>自訂角（°）<span class="value" id="phiVal">0</span></label><input id="phi" type="range" min="-90" max="90" step="1" value="0"></div>
+      <div class="row"><button class="primary" id="addPlanet">＋ 新增行星</button><button id="reset">重設</button></div>
+      <div class="sub" id="msg" style="margin-top:6px;color:#ffd166"></div>
+    </div>
+
+    <!-- Readout -->
+    <div class="card">
+      <h3 style="margin:6px 0 8px">讀數／能量</h3>
+      <div class="readout">
+        <div class="item"><div class="label">半徑 r（km）</div><div class="val" id="rr">—</div></div>
+        <div class="item"><div class="label">速率 v（km/s）</div><div class="val" id="rv">—</div></div>
+        <div class="item"><div class="label">比動能 k（MJ/kg）</div><div class="val k" id="rk">—</div></div>
+        <div class="item"><div class="label">比位能 u（MJ/kg）</div><div class="val u" id="ru">—</div></div>
+        <div class="item"><div class="label">比總能 e（MJ/kg）</div><div class="val e" id="re">—</div></div>
+        <div class="item"><div class="label">能量判斷</div><div class="val" id="rtype">—</div></div>
+      </div>
+      <canvas id="energy" width="1000" height="220"></canvas>
+    </div>
+  </section>
+
+  <!-- Space -->
+  <section class="card canvas-wrap">
+    <canvas id="space" width="1100" height="520"></canvas>
+  </section>
+
+  <!-- Learning Tabs -->
+  <section class="card tabs">
+    <div class="tab-list" role="tablist" aria-label="學習分頁">
+      <button class="tab" role="tab" aria-selected="true" data-tab="law">定律內容</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="formula">公式表示</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="diagram">圖像理解</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="scope">適用範圍</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="apps">常見應用</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="quiz">教學延伸問題</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="ans">延伸問題解答</button>
+    </div>
+
+    <div id="panel-law" class="tab-panel active">
+      <ul>
+        <li><b>萬有引力定律</b>：兩質點間引力 \(F=\dfrac{G m_1 m_2}{r^2}\)，方向沿連心線。</li>
+        <li><b>軌道觀點</b>：太陽質量 \(M\) 遠大於行星，近似中心力問題。</li>
+        <li><b>能量觀點</b>：比機械能 \(\varepsilon=\dfrac{v^2}{2}-\dfrac{\mu}{r}\)（\(\mu=GM\)）。\(\varepsilon<0\)：束縛（橢圓/圓）；\(\varepsilon=0\)：拋物；\(\varepsilon>0\)：雙曲。</li>
+        <li><b>速度標尺</b>：圓軌道 \(v_c=\sqrt{\mu/r}\)，逃逸 \(v_e=\sqrt{2\mu/r}\)。</li>
+      </ul>
+    </div>
+
+    <div id="panel-formula" class="tab-panel">
+      <div class="formula-block">引力：\( \vec F = -\,\dfrac{GMm}{r^3}\,\vec r \)</div>
+      <div class="formula-block">比位能：\( u(r) = -\dfrac{\mu}{r} \)，比動能：\( k=\dfrac{v^2}{2} \)，比總能：\( \varepsilon=k+u \)</div>
+      <div class="formula-block">視-伐（Vis-Viva）式：\( v^2=\mu\!\left(\dfrac{2}{r}-\dfrac{1}{a}\right) \)（\(a\) 為橢圓半長軸；圓軌道 \(a=r\)）</div>
+      <div class="formula-block">開普勒第三定律：\( T=2\pi\sqrt{\dfrac{a^3}{\mu}} \)</div>
+      <div class="formula-block">加速度（向心）：\( \vec a = -\,\dfrac{\mu}{r^3}\,\vec r \)</div>
+    </div>
+
+    <div id="panel-diagram" class="tab-panel">
+      <figure style="text-align:center; margin:6px 0 10px">
+        <svg width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="中心力圓軌道示意">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 Z" fill="#6ee7ff"></path>
+            </marker>
+          </defs>
+          <!-- Sun -->
+          <radialGradient id="sunG" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#fff6b0"/><stop offset="100%" stop-color="#ff8f00"/>
+          </radialGradient>
+          <circle cx="120" cy="80" r="20" fill="url(#sunG)" stroke="rgba(255,255,255,.5)"/>
+          <text x="120" y="80" text-anchor="middle" dy="4" font-size="10" fill="#2b0c0c">Sun</text>
+
+          <!-- Orbit -->
+          <circle cx="120" cy="80" r="70" fill="none" stroke="rgba(255,255,255,.35)"/>
+          <!-- Planet -->
+          <circle cx="190" cy="80" r="7" fill="#6ee7ff"/>
+          <!-- r -->
+          <line x1="120" y1="80" x2="190" y2="80" stroke="#9fb0d0" stroke-dasharray="4 4"/>
+          <text x="155" y="70" font-size="12" fill="#9fb0d0">r</text>
+          <!-- v (tangent) -->
+          <line x1="190" y1="80" x2="190" y2="50" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="196" y="55" font-size="12" fill="#a78bfa">v</text>
+          <!-- a (to center) -->
+          <line x1="190" y1="80" x2="150" y2="80" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="165" y="72" font-size="12" fill="#34d399">a</text>
+        </svg>
+        <figcaption class="sub">圓軌道時 \( \vec v \perp \vec r \)、加速度指向中心；\(v=\sqrt{\mu/r}\)。</figcaption>
+      </figure>
+    </div>
+
+    <div id="panel-scope" class="tab-panel">
+      <ul>
+        <li>假設太陽遠大於行星（\(\,M\gg m\)），可視為固定的中心力。</li>
+        <li>只考慮引力；忽略其他行星擾動、非球形引力、相對論修正。</li>
+        <li>模擬採數值積分，步長過大可能導致能量微小漂移（教學可接受）。</li>
+      </ul>
+    </div>
+
+    <div id="panel-apps" class="tab-panel">
+      <ul>
+        <li>行星與人造衛星軌道設計（轉移軌道、霍曼轉移）。</li>
+        <li>逃逸速度與任務能量估算（\(\Delta v\) 預算）。</li>
+        <li>重力助推（Swing-by）直觀化：能量在參考框架下的轉換。</li>
+      </ul>
+    </div>
+
+    <div id="panel-quiz" class="tab-panel">
+      <ol>
+        <li>若 \(r=1.5\times10^{11}\,\text{m}\)：求圓軌道速度 \(v_c\)。</li>
+        <li>在同一半徑 \(r\)，逃逸速度與圓軌道速度之比為？</li>
+        <li>已知 \(r=2.0\times10^{11}\,\text{m}\)、\(v=20\,\text{km/s}\)。判斷軌道類型（用 \(\varepsilon\)）。</li>
+        <li>橢圓軌道半長軸 \(a=1.2\times10^{11}\,\text{m}\)：求週期 \(T\)（\(\mu=GM\)）。</li>
+      </ol>
+    </div>
+
+    <div id="panel-ans" class="tab-panel">
+      <details open><summary><b>題 1</b></summary>
+        \(v_c=\sqrt{\mu/r}=\sqrt{(GM)/r}\approx 29.8\,\text{km/s}\)（取太陽 \(\mu\approx1.327\times10^{20}\,\text{m}^3/\text{s}^2\)）。
+      </details>
+      <details><summary><b>題 2</b></summary>
+        \(v_e=\sqrt{2\mu/r}=\sqrt{2}\,v_c\)，比值 \(\sqrt{2}\approx1.414\)。
+      </details>
+      <details><summary><b>題 3</b></summary>
+        \(\varepsilon=\dfrac{v^2}{2}-\dfrac{\mu}{r}\)。代入後若 \(\varepsilon<0\) 則束縛；以數值估算會得到 \(\varepsilon<0\)（束縛橢圓）。
+      </details>
+      <details><summary><b>題 4</b></summary>
+        \(T=2\pi\sqrt{a^3/\mu}\)。代入 \(a\) 與太陽 \(\mu\) 即得數值（單位秒；可再換成天）。
+      </details>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- Theme toggle (persist) ---------- */
+const root=document.documentElement, themeBtn=document.getElementById('themeBtn');
+(function initTheme(){
+  const saved=localStorage.getItem('theme');
+  if(saved==='light') root.classList.add('light');
+  else if(saved==='dark') root.classList.remove('light');
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    root.classList.add('light');
+  }
+})();
+themeBtn.addEventListener('click',()=>{
+  root.classList.toggle('light');
+  localStorage.setItem('theme', root.classList.contains('light')?'light':'dark');
+});
+
+/* ---------- Tabs ---------- */
+const tabs=[...document.querySelectorAll('.tab-list .tab')];
+const panels={
+  law:document.getElementById('panel-law'),
+  formula:document.getElementById('panel-formula'),
+  diagram:document.getElementById('panel-diagram'),
+  scope:document.getElementById('panel-scope'),
+  apps:document.getElementById('panel-apps'),
+  quiz:document.getElementById('panel-quiz'),
+  ans:document.getElementById('panel-ans')
+};
+tabs.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.setAttribute('aria-selected','false'));
+    btn.setAttribute('aria-selected','true');
+    Object.values(panels).forEach(p=>p.classList.remove('active'));
+    panels[btn.dataset.tab].classList.add('active');
+  });
+});
+
+/* ---------- Utils ---------- */
+const $=id=>document.getElementById(id);
+const sciHTML=(n,unit="")=>{
+  if(!Number.isFinite(n)) return "—";
+  if(n===0) return "0"+unit;
+  const e=Math.floor(Math.log10(Math.abs(n)));
+  const m=n/10**e;
+  return `${m.toFixed(3)}×10<sup>${e}</sup>${unit}`;
+};
+/* HiDPI canvas */
+function setupCanvas(canvas){
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=Math.round(rect.width*dpr);
+  canvas.height=Math.round(rect.height*dpr);
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return ctx;
+}
+
+/* ---------- Canvases ---------- */
+const sp=$("space"), sctx=setupCanvas(sp);
+const ec=$("energy"), ectx=setupCanvas(ec);
+const W=sp.getBoundingClientRect().width, H=sp.getBoundingClientRect().height;
+
+/* ---------- Phys ---------- */
+const G=6.674e-11, M=1.989e30;
+let sunX=W/2, sunY=H/2;
+let metersPerPixel=1.5e9, timeFactor=1, trailMax=800;
+let showTrail=true,showV=true,showA=true,showGrid=false;
+let planets=[]; const MAX_PLANETS=1;
+
+/* ---------- Starfield ---------- */
+const stars=document.createElement("canvas"); stars.width=W; stars.height=H;
+const sc=stars.getContext("2d");
+for(let i=0;i<230;i++){
+  sc.fillStyle=`rgba(255,255,255,${0.35+Math.random()*0.65})`;
+  sc.beginPath(); sc.arc(Math.random()*W,Math.random()*H,Math.random()*1.2,0,Math.PI*2); sc.fill();
+}
+
+/* ---------- UI ---------- */
+$("time").oninput=e=>{timeFactor=+e.target.value;$("timeVal").textContent=timeFactor.toFixed(1)};
+$("trail").oninput=e=>{trailMax=+e.target.value;$("trailVal").textContent=trailMax};
+$("showTrail").onchange=e=>{showTrail=e.target.checked};
+$("showV").onchange=e=>{showV=e.target.checked};
+$("showA").onchange=e=>{showA=e.target.checked};
+$("showGrid").onchange=e=>{showGrid=e.target.checked};
+["r0","v0","phi"].forEach(id=>$(id).oninput=syncMini);
+$("vdir").onchange=()=>{$("customRow").style.display=$("vdir").value==="custom"?"flex":"none"};
+function syncMini(){$("rVal").textContent=$("r0").value;$("vVal").textContent=$("v0").value;$("phiVal").textContent=$("phi").value;}
+function updateAddButton(){$("addPlanet").disabled=planets.length>=MAX_PLANETS;}
+function addPlanet(rMkm=150,vKms=30,vdir="tangent",phiDeg=0){
+  if(planets.length>=MAX_PLANETS){$("msg").textContent="⚠️ 僅允許 1 顆行星";return;}
+  const theta=270*Math.PI/180;  // 初始在下方
+  const r=rMkm*1e9, x=r*Math.cos(theta), y=r*Math.sin(theta);
+  let ang=theta+Math.PI/2;      // 切向
+  if(vdir==="radial") ang=theta;
+  if(vdir==="custom") ang+=phiDeg*Math.PI/180;
+  const vx=vKms*1000*Math.cos(ang), vy=vKms*1000*Math.sin(ang);
+  planets=[{x,y,vx,vy,m:5.97e24,color:"#6ee7ff",trail:[]}];
+  updateAddButton(); $("msg").textContent="";
+}
+$("addPlanet").onclick=()=>addPlanet(+$("r0").value,+$("v0").value,$("vdir").value,+$("phi").value);
+$("reset").onclick=()=>{planets=[];updateAddButton();};
+
+/* ---------- Scale & coords ---------- */
+function updateScale(){
+  const maxR=Math.max(1.5e11,...planets.map(p=>Math.hypot(p.x,p.y)));
+  metersPerPixel=(maxR*1.15)/(Math.min(W,H)*0.45);
+}
+function toCanvas(x,y){return [sunX+x/metersPerPixel,sunY+y/metersPerPixel];}
+
+/* ---------- Energy ---------- */
+const kSpec=p=>0.5*(p.vx*p.vx+p.vy*p.vy);
+const uSpec=p=>-G*M/Math.hypot(p.x,p.y);
+const eSeries=[];function pushE(d){eSeries.push(d);if(eSeries.length>600)eSeries.shift();}
+function drawEnergy(){
+  ectx.clearRect(0,0,ec.width,ec.height);
+  if(eSeries.length<2)return;
+  const vals=eSeries.flatMap(d=>[d.k,d.u,d.e]);
+  const vmin=Math.min(...vals), vmax=Math.max(...vals), pad=0.1*(vmax-vmin||1);
+  const yMin=vmin-pad, yMax=vmax+pad;
+  const X=i=>40+i*(ec.width-50)/(eSeries.length-1);
+  const Y=v=>(ec.height-20)-(v-yMin)*(ec.height-30)/(yMax-yMin);
+  const plot=(key,c)=>{ectx.strokeStyle=c; ectx.beginPath();
+    eSeries.forEach((d,i)=>{const x=X(i),y=Y(d[key]); i?ectx.lineTo(x,y):ectx.moveTo(x,y);});
+    ectx.stroke();
+  };
+  plot("k","#60a5fa"); plot("u","#fca5a5"); plot("e","#34d399");
+}
+
+/* ---------- Integrator ---------- */
+function step(){
+  const sub=2, dt=(3600*timeFactor)/sub;
+  for(let s=0;s<sub;s++){
+    for(const p of planets){
+      const dx=-p.x, dy=-p.y;
+      const r2=dx*dx+dy*dy; const r=Math.sqrt(r2)||1;
+      const invr3=1/(r2*r);
+      const ax=G*M*dx*invr3, ay=G*M*dy*invr3;
+      p.vx+=ax*dt; p.vy+=ay*dt;
+      p.x+=p.vx*dt; p.y+=p.vy*dt;
+      p.trail.push([p.x,p.y]); if(p.trail.length>trailMax)p.trail.shift();
+    }
+  }
+}
+
+/* ---------- Sun ---------- */
+function drawSun(){
+  sctx.save();
+  sctx.globalAlpha=1; sctx.globalCompositeOperation='source-over';
+  const R=26;
+  const g1=sctx.createRadialGradient(sunX,sunY,0,sunX,sunY,R*2.2);
+  g1.addColorStop(0,"rgba(255,200,80,.35)");
+  g1.addColorStop(1,"rgba(255,200,80,0)");
+  sctx.fillStyle=g1; sctx.beginPath(); sctx.arc(sunX,sunY,R*2.2,0,Math.PI*2); sctx.fill();
+
+  const g2=sctx.createRadialGradient(sunX,sunY,0,sunX,sunY,R);
+  g2.addColorStop(0,"#fff6b0"); g2.addColorStop(1,"#ff8f00");
+  sctx.fillStyle=g2; sctx.beginPath(); sctx.arc(sunX,sunY,R,0,Math.PI*2); sctx.fill();
+
+  sctx.strokeStyle="rgba(255,255,255,.6)"; sctx.lineWidth=1;
+  sctx.beginPath(); sctx.arc(sunX,sunY,R,0,Math.PI*2); sctx.stroke();
+  sctx.restore();
+}
+
+/* ---------- Draw ---------- */
+function draw(){
+  sctx.clearRect(0,0,W,H);
+  sctx.drawImage(stars,0,0);
+
+  if(showGrid){
+    sctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--grid').trim()||"rgba(255,255,255,.06)";
+    for(let x=sunX%100;x<W;x+=100){sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();}
+    for(let y=sunY%100;y<H;y+=100){sctx.beginPath();sctx.moveTo(0,y);sctx.lineTo(W,y);sctx.stroke();}
+  }
+
+  drawSun();
+
+  const vmax=Math.max(1,...planets.map(p=>Math.hypot(p.vx,p.vy)/1000));
+  const vScale=70/vmax;
+
+  planets.forEach(p=>{
+    // Trail
+    if(showTrail && p.trail.length>1){
+      sctx.beginPath(); sctx.lineWidth=1.4;
+      sctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--trail').trim()||"rgba(255,255,255,.9)";
+      p.trail.forEach((q,j)=>{const [tx,ty]=toCanvas(q[0],q[1]); j?sctx.lineTo(tx,ty):sctx.moveTo(tx,ty);});
+      sctx.stroke(); sctx.lineWidth=1;
+    }
+
+    // Planet
+    const [x,y]=toCanvas(p.x,p.y);
+    sctx.beginPath(); sctx.arc(x,y,6,0,Math.PI*2); sctx.fillStyle="#6ee7ff"; sctx.fill();
+    sctx.fillStyle="#cbd5e1"; sctx.font="12px ui-sans-serif"; sctx.fillText("Planet 1", x+8, y-8);
+
+    // V vector
+    if(showV){
+      sctx.strokeStyle="#a78bfa";
+      sctx.beginPath(); sctx.moveTo(x,y);
+      sctx.lineTo(x+p.vx/1000*vScale, y+p.vy/1000*vScale);
+      sctx.stroke();
+    }
+    // A vector (toward center)
+    if(showA){
+      const r=Math.hypot(p.x,p.y);
+      sctx.strokeStyle="#34d399";
+      sctx.beginPath(); sctx.moveTo(x,y);
+      sctx.lineTo(x+(-p.x/r)*30, y+(-p.y/r)*30);
+      sctx.stroke();
+    }
+  });
+
+  // Readouts
+  if(planets.length){
+    const p=planets[0];
+    const r=Math.hypot(p.x,p.y), v=Math.hypot(p.vx,p.vy);
+    const k=kSpec(p)/1e6, u=uSpec(p)/1e6, e=k+u;
+    $("rr").innerHTML=sciHTML(r/1000," km");
+    $("rv").innerHTML=sciHTML(v/1000," km/s");
+    $("rk").innerHTML=sciHTML(k," MJ/kg");
+    $("ru").innerHTML=sciHTML(u," MJ/kg");
+    $("re").innerHTML=sciHTML(e," MJ/kg");
+    $("rtype").textContent= e<0?"束縛（橢圓/圓）":(Math.abs(e)<1e-3?"臨界（拋物）":"逃逸（雙曲）");
+    pushE({k,u,e});
+  }else{
+    ["rr","rv","rk","ru","re","rtype"].forEach(id=>$(id).textContent="—");
+  }
+}
+
+/* ---------- Loop ---------- */
+function loop(){ step(); updateScale(); draw(); drawEnergy(); requestAnimationFrame(loop); }
+(function init(){ updateAddButton(); loop(); })();
+</script>
+</body>
+</html>

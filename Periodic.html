@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Periodic Motion（週期運動：彈簧振子）</title>
+
+<!-- ===== Theme & Base ===== -->
+<style>
+:root{
+  /* Dark theme (default) */
+  --bg:#0b1020; --panel:#101634; --card:#131a38;
+  --muted:#8fa1c5; --text:#eaf0ff; --border:rgba(255,255,255,.12);
+  --brand:#6ee7ff; --brand-2:#a78bfa; --accent:#34d399; --yellow:#fde047;
+  --shadow:0 12px 32px rgba(0,0,0,.35); --radius:16px;
+}
+:root.light{
+  /* Light theme */
+  --bg:#f7fafc; --panel:#ffffff; --card:#ffffff;
+  --muted:#566076; --text:#0b1020; --border:rgba(0,0,0,.12);
+  --brand:#06b6d4; --brand-2:#8b5cf6; --accent:#10b981; --yellow:#eab308;
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--text);
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei";
+  background:
+    radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, var(--brand-2) 30%, transparent), transparent 60%),
+    radial-gradient(900px 550px at 100% 0%, color-mix(in oklab, var(--brand) 25%, transparent), transparent 60%),
+    var(--bg);
+}
+.container{max-width:1080px;margin:0 auto;padding:28px 16px}
+.card{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+}
+h1{margin:0;font-size:26px;letter-spacing:.2px}
+.sub{color:var(--muted); font-size:14px; margin-top:6px}
+
+/* ===== Header ===== */
+.header{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:16px 18px;
+  background:linear-gradient(135deg, color-mix(in oklab, var(--brand) 18%, transparent), color-mix(in oklab, var(--brand-2) 20%, transparent));
+}
+.header-right{display:flex; align-items:center; gap:10px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{
+  background:color-mix(in oklab, var(--card) 60%, transparent);
+  border:1px solid var(--border);
+  color:var(--text); padding:4px 10px; border-radius:999px; font-size:12px; backdrop-filter: blur(4px);
+}
+button{
+  height:36px; padding:0 14px; border-radius:10px; border:1px solid var(--border);
+  background:var(--panel); color:var(--text); cursor:pointer; transition:.15s transform, .15s filter;
+}
+button:hover{transform:translateY(-1px); filter:brightness(1.05)}
+button.primary{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#041d26; border-color:transparent}
+button.ghost{background:transparent}
+
+/* ===== Controls ===== */
+.controls{display:grid; grid-template-columns:repeat(2,minmax(260px,1fr)); gap:12px; padding:14px}
+.group{border:1px dashed var(--border); border-radius:12px; padding:10px}
+.group h3{margin:0 0 8px; font-size:15px; color:color-mix(in oklab, var(--text) 86%, transparent)}
+.row{display:flex; gap:10px; align-items:center; padding:6px 0; flex-wrap:wrap}
+label{min-width:116px; color:var(--muted); font-size:14px}
+.value{width:74px; text-align:right; font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+select{
+  height:36px; width:100%;
+  border-radius:10px; border:1px solid var(--border);
+  background:color-mix(in oklab, var(--panel) 90%, var(--bg));
+  color:var(--text); padding:0 10px;
+}
+
+/* ===== Sim + Readout ===== */
+.grid2{display:grid; grid-template-columns:1.15fr .85fr; gap:14px; padding:12px}
+.sim{padding:12px}
+canvas{width:100%; height:300px; border:1px dashed var(--border); border-radius:12px; background:rgba(255,255,255,.03)}
+:root.light canvas{background:#f7fafc}
+.readout{padding:12px}
+.kpi{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; align-items:center;
+  font-variant-numeric:tabular-nums;
+}
+.kpi .item{display:flex; flex-direction:column}
+.kpi .label{font-size:13.5px; color:color-mix(in oklab, var(--text) 70%, transparent)}
+.kpi .value{font-size:20px; font-weight:800}
+.divider{height:1px; background:var(--border); grid-column:1/-1}
+.callout{
+  border-left:4px solid var(--accent);
+  background:color-mix(in oklab, var(--accent) 18%, transparent); padding:10px 12px; border-radius:10px; margin-top:8px; font-size:14px
+}
+
+/* ===== Tabs ===== */
+.tabs{padding:12px}
+.tab-list{display:flex; gap:8px; flex-wrap:wrap}
+.tab-list button{
+  background:transparent; border:1px solid var(--border); color:var(--muted);
+  border-radius:10px; padding:8px 14px; font-size:15px; transition:.15s
+}
+.tab-list button[aria-selected="true"]{
+  background:linear-gradient(135deg, color-mix(in oklab, var(--brand) 25%, transparent), color-mix(in oklab, var(--brand-2) 25%, transparent));
+  color:var(--text); box-shadow:0 0 12px color-mix(in oklab, var(--brand) 35%, transparent)
+}
+.tab-panel{display:none; margin-top:10px; font-size:17px; line-height:1.8}
+.tab-panel.active{display:block; animation:fade .2s ease}
+@keyframes fade {from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+.formula-block{text-align:center;font-size:19px;background:color-mix(in oklab, var(--card) 70%, transparent);border:1px dashed var(--border);border-radius:10px;margin:10px 0;padding:10px}
+
+/* ===== Footer ===== */
+.footer{color:var(--muted); font-size:12px; text-align:center; padding:16px}
+
+/* ===== Responsive ===== */
+@media (max-width: 960px){
+  .grid2{grid-template-columns:1fr}
+  canvas{height:260px}
+}
+@media (prefers-color-scheme: light){
+  /* 如果系統是淺色且未手動選擇，就使用淺色 */
+  :root:not(.dark):not(.light){ --bg:#f7fafc; }
+}
+</style>
+
+<!-- MathJax -->
+<script>
+  window.MathJax = { tex: { inlineMath: [['\\(','\\)'], ['$', '$']] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- ===== Header ===== -->
+  <section class="card header" aria-label="頁首">
+    <div>
+      <h1>Periodic Motion（週期運動：彈簧振子）</h1>
+      <p class="sub">簡潔互動：觀察 \(x(t)\) 與能量往返，量測 \(T\) 並比較 \(T_0=2\pi\sqrt{m/k}\)。</p>
+      <div class="badges">
+        <span class="badge">簡諧運動</span><span class="badge">阻尼比 \(\zeta\)</span><span class="badge">能量</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="themeBtn" class="ghost" aria-label="切換主題">🌓 主題</button>
+    </div>
+  </section>
+
+  <!-- ===== Controls ===== -->
+  <section class="card controls" aria-label="控制面板">
+    <div class="group">
+      <h3>模擬控制</h3>
+      <div class="row">
+        <button id="start" class="primary">▶︎ 開始</button>
+        <button id="pause">⏸ 暫停</button>
+        <button id="reset">↺ 重設</button>
+      </div>
+      <div class="row">
+        <label for="init">初始條件</label>
+        <select id="init" aria-label="初始條件">
+          <option value="xA_v0">位移 A₀、速度 0</option>
+          <option value="x0_vkick">位移 0、給初速</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>參數設定</h3>
+      <div class="row"><label for="m">質量 m (kg)</label><input id="m" type="range" min="0.2" max="5" step="0.1" value="1.0"><div id="mv" class="value">1.00</div></div>
+      <div class="row"><label for="k">彈簧常數 k (N/m)</label><input id="k" type="range" min="1" max="200" step="1" value="25"><div id="kv" class="value">25</div></div>
+      <div class="row"><label for="c">阻尼 c (kg/s)</label><input id="c" type="range" min="0" max="20" step="0.1" value="0.2"><div id="cv" class="value">0.20</div></div>
+      <div class="row"><label for="A">初始位移 A₀ (m)</label><input id="A" type="range" min="0.05" max="0.8" step="0.05" value="0.30"><div id="Av" class="value">0.30</div></div>
+    </div>
+  </section>
+
+  <!-- ===== Simulation + Readout ===== -->
+  <section class="card grid2" aria-label="模擬與讀值">
+    <div class="sim">
+      <canvas id="sim" width="560" height="300" aria-label="彈簧振子畫面"></canvas>
+    </div>
+    <div class="readout">
+      <div class="kpi">
+        <div class="item"><div class="label">T₀（理論）</div><div><span id="T0" class="value">—</span> <span style="opacity:.7">s</span></div></div>
+        <div class="item"><div class="label">T（量測）</div><div><span id="Tm" class="value">—</span> <span style="opacity:.7">s</span></div></div>
+        <div class="item"><div class="label">相對誤差</div><div><span id="Terr" class="value">—</span> <span style="opacity:.7">%</span></div></div>
+        <div class="item"><div class="label">阻尼比 ζ</div><div><span id="zeta" class="value">—</span></div></div>
+        <div class="divider"></div>
+        <div class="item"><div class="label">K 動能</div><div><span id="K" class="value">—</span> <span style="opacity:.7">J</span></div></div>
+        <div class="item"><div class="label">U 彈簧位能</div><div><span id="U" class="value">—</span> <span style="opacity:.7">J</span></div></div>
+        <div class="item"><div class="label">E 總能（不含耗散）</div><div><span id="E" class="value">—</span> <span style="opacity:.7">J</span></div></div>
+        <div class="item"><div class="label">x, v</div><div><span id="xv" class="value">—</span></div></div>
+      </div>
+      <div class="callout" id="tipBox">在小阻尼下，量測週期接近 \(T_0=2\pi\sqrt{m/k}\)。改變 \(A_0\)（振幅）時，週期幾乎不變。</div>
+    </div>
+  </section>
+
+  <!-- ===== Learning Tabs ===== -->
+  <section class="card tabs" aria-label="學習分頁">
+    <div class="tab-list" role="tablist">
+      <button role="tab" class="tab" aria-selected="true" data-tab="law">定律內容</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="formula">公式表示</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="diagram">圖像理解</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="scope">適用範圍</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="apps">常見應用</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="quiz">教學延伸問題</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="ans">延伸問題解答</button>
+    </div>
+
+    <div id="panel-law" class="tab-panel active">
+      <ul>
+        <li><b>簡諧振動（SHM）</b>：回復力與位移成正比且指向平衡點：\(F=-kx\)。</li>
+        <li><b>阻尼振動</b>：有阻力 \(F_d=-c\,v\) 時：\( m\ddot x + c\dot x + kx = 0 \)。</li>
+        <li><b>週期</b>：小阻尼下 \(T\approx 2\pi\sqrt{m/k}\)，與振幅幾乎無關。</li>
+        <li><b>阻尼比</b>：\( \zeta=\dfrac{c}{2\sqrt{mk}} \)；\(\zeta&lt;1\) 欠阻尼、\(\zeta=1\) 臨界、\(\zeta&gt;1\) 過阻尼。</li>
+      </ul>
+    </div>
+
+    <div id="panel-formula" class="tab-panel">
+      <div class="formula-block">運動方程：\( m\ddot x + c\dot x + kx = 0 \)</div>
+      <div class="formula-block">自然角頻率：\( \omega_0=\sqrt{k/m} \)，理論週期 \( T_0=\dfrac{2\pi}{\omega_0}=2\pi\sqrt{m/k} \)</div>
+      <div class="formula-block">能量：\( K=\tfrac12 m v^2,\; U=\tfrac12 k x^2,\; E=K+U \)（阻尼會耗損機械能）</div>
+      <div class="formula-block">阻尼比：\( \zeta=\dfrac{c}{2\sqrt{mk}} \)</div>
+    </div>
+
+    <div id="panel-diagram" class="tab-panel">
+      <figure style="text-align:center;margin:6px 0 10px">
+        <svg width="640" height="120" viewBox="0 0 640 120" role="img" aria-label="彈簧振子示意">
+          <rect x="40" y="20" width="12" height="80" fill="rgba(255,255,255,.45)"/>
+          <path d="M 52 60 C 72 40, 92 80, 112 60 S 152 40, 172 60 S 212 80, 232 60 S 272 40, 292 60" fill="none" stroke="var(--brand)" stroke-width="3"/>
+          <rect x="292" y="40" width="80" height="40" rx="8" fill="#f87171"/>
+          <text x="332" y="64" text-anchor="middle" font-size="12" fill="#2b0c0c">m</text>
+          <text x="110" y="22" font-size="12" fill="var(--brand)">k</text>
+        </svg>
+        <figcaption class="sub">位移 \(x\) 從平衡點量起；回復力由彈簧提供，阻尼使振幅衰減。</figcaption>
+      </figure>
+    </div>
+
+    <div id="panel-scope" class="tab-panel">
+      <ul>
+        <li>小位移、線性彈簧與線性阻尼近似有效。</li>
+        <li>若外力驅動（受迫振動）或彈簧非線性，需用更一般模型。</li>
+      </ul>
+    </div>
+
+    <div id="panel-apps" class="tab-panel">
+      <ul>
+        <li>汽車避震（調整阻尼比以提升舒適與穩定）。</li>
+        <li>加速度感測器 / 手機陀螺儀的機電模型。</li>
+        <li>鐘擺、微機械彈簧結構、地震隔震系統。</li>
+      </ul>
+    </div>
+
+    <div id="panel-quiz" class="tab-panel">
+      <ol>
+        <li>\(m=1.0\) kg、\(k=25\) N/m：求 \(T_0\)。</li>
+        <li>在 \(\zeta=0.05\) 下量測週期 \(T\) 與 \(T_0\) 比較，說明是否與振幅相關。</li>
+        <li>調成 \(\zeta\approx1\) 與 \(\zeta>1\)，描述系統回到平衡的差異。</li>
+        <li>若 \(k\) 變 4 倍而 \(m\) 不變，\(T\) 會如何改變？</li>
+      </ol>
+    </div>
+
+    <div id="panel-ans" class="tab-panel">
+      <details open><summary><b>題 1</b></summary>
+        \(T_0=2\pi\sqrt{1/25}=2\pi/5\approx1.257\) s。
+      </details>
+      <details><summary><b>題 2</b></summary>
+        小阻尼下 \(T\approx T_0\)，與振幅幾乎無關（等幅線性系統）。
+      </details>
+      <details><summary><b>題 3</b></summary>
+        \(\zeta\approx1\)：最快速且不振盪回平衡；\(\zeta>1\)：更慢、也不振盪。
+      </details>
+      <details><summary><b>題 4</b></summary>
+        \(T\propto\sqrt{m/k}\)，若 \(k\) 變 4 倍，\(T\) 變為原來的一半。
+      </details>
+    </div>
+  </section>
+</div>
+
+<!-- ===== Scripts ===== -->
+<script>
+/* ---------- Theme toggle (dark/light with persistence) ---------- */
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeBtn');
+(function initTheme(){
+  const saved = localStorage.getItem('theme'); // 'light' | 'dark' | null
+  if(saved==='light') root.classList.add('light');
+  else if(saved==='dark') root.classList.remove('light');
+  else {
+    // 如果系統是 light，就預設 light
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      root.classList.add('light');
+    }
+  }
+})();
+themeBtn.addEventListener('click', ()=>{
+  root.classList.toggle('light');
+  localStorage.setItem('theme', root.classList.contains('light') ? 'light' : 'dark');
+});
+
+/* ---------- Tabs ---------- */
+const tabs = document.querySelectorAll('.tab-list .tab');
+const panels = {
+  law: document.getElementById('panel-law'),
+  formula: document.getElementById('panel-formula'),
+  diagram: document.getElementById('panel-diagram'),
+  scope: document.getElementById('panel-scope'),
+  apps: document.getElementById('panel-apps'),
+  quiz: document.getElementById('panel-quiz'),
+  ans: document.getElementById('panel-ans'),
+};
+tabs.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    tabs.forEach(b=>b.setAttribute('aria-selected','false'));
+    btn.setAttribute('aria-selected','true');
+    Object.values(panels).forEach(p=>p.classList.remove('active'));
+    panels[btn.dataset.tab].classList.add('active');
+  });
+});
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const fmt = n => (Math.abs(n)<1e-3? n.toExponential(1): n.toFixed(2));
+function setText(id, val){ $(id).textContent = val; }
+
+/* ---------- Controls ---------- */
+const startBtn=$("start"), pauseBtn=$("pause"), resetBtn=$("reset");
+const mSl=$("m"), kSl=$("k"), cSl=$("c"), ASl=$("A"), initSel=$("init");
+const labels = {mv:$("mv"), kv:$("kv"), cv:$("cv"), Av:$("Av")};
+function syncLabels(){
+  labels.mv.textContent = (+mSl.value).toFixed(2);
+  labels.kv.textContent = (+kSl.value).toFixed(0);
+  labels.cv.textContent = (+cSl.value).toFixed(2);
+  labels.Av.textContent = (+ASl.value).toFixed(2);
+}
+[mSl,kSl,cSl,ASl].forEach(s=>s.addEventListener('input', ()=>{ syncLabels(); if(!running) draw(); }));
+initSel.addEventListener('change', ()=>{ if(!running) draw(); });
+
+/* ---------- Simulation state ---------- */
+const cvs = $("sim"), ctx = cvs.getContext("2d");
+const pxPerMeter = 300; const wallX = 60, baseY = 160;
+let running=false, raf=null;
+let t=0, prevTs=null;
+let x=0, v=0; // 位移(相對平衡)與速度
+let lastX=0, zeroTimes=[]; // 量測週期用
+
+function reset(){
+  t=0; prevTs=null; zeroTimes=[];
+  const A0=+ASl.value;
+  if(initSel.value==="xA_v0"){ x = A0; v = 0; }
+  else { x = 0; v = Math.sqrt(+kSl.value/+mSl.value)*A0; } // 以自然頻率給初速
+  lastX = x;
+}
+
+/* ---------- Physics: m x'' + c x' + k x = 0 ---------- */
+function step(dt){
+  const m=+mSl.value, k=+kSl.value, c=+cSl.value;
+  const a = (-c*v - k*x)/m;
+  v += a*dt;
+  x += v*dt;
+  t += dt;
+
+  // 上行穿越 x=0（過零點）
+  if(lastX<0 && x>=0 && v>0 && Math.abs(x)>1e-4){
+    zeroTimes.push(t);
+    if(zeroTimes.length>6) zeroTimes.shift();
+  }
+  lastX = x;
+}
+
+/* ---------- Drawing ---------- */
+function draw(){
+  const m=+mSl.value, k=+kSl.value, c=+cSl.value;
+  const zeta = c/(2*Math.sqrt(m*k));
+  const omega0 = Math.sqrt(k/m);
+  const T0 = 2*Math.PI/omega0;
+
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+
+  // 基準線與牆
+  ctx.fillStyle="rgba(255,255,255,.12)"; if(document.documentElement.classList.contains('light')) ctx.fillStyle="rgba(0,0,0,.12)";
+  ctx.fillRect(wallX, baseY, cvs.width-wallX-40, 2);
+  ctx.fillStyle="rgba(255,255,255,.45)"; if(document.documentElement.classList.contains('light')) ctx.fillStyle="rgba(0,0,0,.35)";
+  ctx.fillRect(wallX-12, baseY-60, 12, 120);
+
+  // 目標方塊位置（限制不撞牆/出畫面）
+  const naturalLeft = wallX + 80 + x*pxPerMeter; // 自然長 80px
+  const blockLeft = Math.max(wallX+40, Math.min(cvs.width-100, naturalLeft));
+
+  // 先畫彈簧到方塊前 6px（避免穿模）
+  drawSpringCoilTo(wallX, baseY, blockLeft - 6);
+  // 方塊
+  ctx.fillStyle="#f87171"; roundRect(ctx, blockLeft, baseY-30, 80, 60, 10); ctx.fill();
+
+  // 讀數
+  const K=0.5*m*v*v, U=0.5*k*x*x, E=K+U;
+  let Tm="—", err="—";
+  if(zeroTimes.length>=2){
+    const periods=[]; for(let i=1;i<zeroTimes.length;i++) periods.push(zeroTimes[i]-zeroTimes[i-1]);
+    const avg = periods.reduce((a,b)=>a+b)/periods.length; Tm=avg; err = Math.abs(Tm-T0)/T0*100;
+  }
+  setText("T0", fmt(T0));
+  setText("Tm", Tm==="—"?"—":fmt(Tm));
+  setText("Terr", err==="—"?"—":fmt(err));
+  setText("zeta", fmt(zeta));
+  setText("K", fmt(K)); setText("U", fmt(U)); setText("E", fmt(E));
+  setText("xv", `x=${fmt(x)} m, v=${fmt(v)} m/s`);
+}
+
+function drawSpringCoilTo(wX, y, endX){
+  const lead = 18, minUsable = 36, minEnd = wX + 2*lead + minUsable;
+  const ex = Math.max(endX, minEnd);
+  const usable = ex - (wX + 2*lead);
+  const turns = Math.max(6, Math.floor(usable/22));
+  const pitch = usable / turns;
+  const amp = Math.max(8, Math.min(14, pitch*0.35));
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || "#6ee7ff";
+  ctx.lineWidth = 3; ctx.beginPath();
+  ctx.moveTo(wX, y); ctx.lineTo(wX+lead, y);
+  let x0 = wX + lead;
+  for(let i=0;i<turns;i++){
+    const midX = x0 + pitch/2, endSeg = x0 + pitch;
+    const cy = y + (i%2===0? -amp : amp);
+    ctx.quadraticCurveTo(midX, cy, endSeg, y);
+    x0 = endSeg;
+  }
+  ctx.lineTo(ex, y); ctx.stroke();
+}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);}
+
+/* ---------- Loop & Buttons ---------- */
+function tick(ts){
+  if(prevTs==null) prevTs=ts;
+  const dt = Math.min(0.04, (ts-prevTs)/1000);
+  prevTs = ts;
+  step(dt); draw();
+  raf = requestAnimationFrame(tick);
+}
+startBtn.addEventListener('click', ()=>{
+  if(running) return; running=true; if(!raf){ prevTs=null; raf=requestAnimationFrame(tick); }
+});
+pauseBtn.addEventListener('click', ()=>{
+  if(!running) return; running=false; cancelAnimationFrame(raf); raf=null;
+  $("tipBox").textContent = "已暫停。可調整參數後再開始。";
+});
+resetBtn.addEventListener('click', ()=>{
+  running=false; cancelAnimationFrame(raf); raf=null; reset(); draw();
+  $("tipBox").textContent = "已重設。點「開始」啟動模擬。";
+});
+
+/* ---------- Init ---------- */
+syncLabels(); reset(); draw();
+</script>
+</body>
+</html>

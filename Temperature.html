@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Temperature & Heat｜熱混合／量熱（無任務＋主題切換）</title>
+
+<style>
+/* ===== Theme (Dark default) ===== */
+:root{
+  --bg:#0b1020; --panel:#11162f; --card:#131a38; --muted:#9fb0d0; --text:#eaf0ff;
+  --border:rgba(255,255,255,.12); --brand:#6ee7ff; --brand-2:#a78bfa; --accent:#34d399; --warn:#fde047;
+  --shadow:0 10px 30px rgba(0,0,0,.35); --radius:16px; --canvas-bg:rgba(255,255,255,.03)
+}
+:root[data-theme="light"]{
+  --bg:#f6f8fb; --panel:#ffffff; --card:#ffffff; --muted:#475569; --text:#0b1020;
+  --border:rgba(0,0,0,.12); --brand:#0ea5e9; --brand-2:#7c3aed; --accent:#16a34a; --warn:#b45309;
+  --shadow:0 8px 24px rgba(0,0,0,.10); --canvas-bg:rgba(0,0,0,.04)
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--text);
+  font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,"Noto Sans TC";
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(167,139,250,.22), transparent 60%),
+    radial-gradient(900px 550px at 100% 0%, rgba(110,231,255,.18), transparent 60%),
+    var(--bg);
+}
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(900px 500px at 0% -10%, rgba(14,165,233,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(124,58,237,.08), transparent 60%),
+    var(--bg);
+}
+
+.container{max-width:1100px;margin:0 auto;padding:26px 16px}
+h1{margin:0 0 6px;font-size:28px} .sub{color:var(--muted);font-size:14px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{background:rgba(255,255,255,.12);border:1px solid var(--border);padding:4px 10px;border-radius:999px;font-size:12px}
+:root[data-theme="light"] .badge{background:rgba(0,0,0,.05)}
+
+.hero{
+  display:flex;justify-content:space-between;gap:16px;align-items:center;
+  border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);
+  background:linear-gradient(135deg, rgba(110,231,255,.18), rgba(167,139,250,.22));padding:22px 18px
+}
+button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{filter:brightness(1.06)}
+button.primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));border-color:transparent;color:#05222b}
+:root[data-theme="light"] button.primary{color:#ffffff}
+
+.grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-top:14px}
+@media (max-width:980px){.grid2{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.section-title{margin:6px 0 8px}
+
+.controls .row{display:grid;grid-template-columns:150px 1fr 80px;gap:10px;align-items:center;margin:8px 0}
+.controls .row.inline{grid-template-columns:150px auto auto auto;gap:10px}
+.controls label{color:var(--muted);font-size:14px}
+.controls .value{text-align:right;font-variant-numeric:tabular-nums}
+select,input[type=number]{height:36px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:0 10px}
+input[type=range]{width:100%}
+
+.readout{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 16px;font-variant-numeric:tabular-nums}
+.item .label{font-size:14px;color:var(--muted);margin-bottom:4px}
+.item .value{font-size:20px;font-weight:800}
+.sep{grid-column:1/-1;height:1px;background:var(--border)}
+.callout{border-left:4px solid var(--accent);background:color-mix(in srgb, var(--accent) 15%, transparent);padding:10px 12px;border-radius:10px;margin:8px 0}
+.warn{border-left-color:var(--warn);background:color-mix(in srgb, var(--warn) 18%, transparent)}
+
+canvas{width:100%;height:300px;border:1px dashed var(--border);border-radius:12px;background:var(--canvas-bg)}
+
+.tabs{margin-top:14px}
+.tab-list{display:flex;gap:8px;flex-wrap:wrap}
+.tab-list button{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:15px}
+.tab-list button[aria-selected="true"]{background:linear-gradient(135deg, rgba(110,231,255,.25), rgba(167,139,250,.25));color:var(--text);
+  box-shadow:0 0 12px rgba(110,231,255,.35)}
+.tab-panel{display:none;margin-top:10px;font-size:17px;line-height:1.8}
+.tab-panel.active{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.formula-block{text-align:center;font-size:19px;background:rgba(255,255,255,.08);border:1px dashed var(--border);border-radius:10px;margin:10px 0;padding:10px}
+:root[data-theme="light"] .formula-block{background:rgba(0,0,0,.04)}
+
+.footer{color:var(--muted);font-size:12px;text-align:center;margin-top:18px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <div>
+      <h1>Temperature & Heat｜熱混合／量熱</h1>
+      <div class="sub">能量守恆：\( \sum Q = 0 \)。支援雙液體、量熱器熱容、與 0°C 冰塊融化情境。</div>
+      <div class="badges"><span class="badge">Q = mcΔT</span><span class="badge">量熱器熱容</span><span class="badge">冰塊融化（選用）</span></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="themeToggle" class="primary" type="button">🌗 主題：深色</button>
+      <button id="runSim" type="button">▶︎ 混合與繪圖</button>
+      <button id="reset" type="button">↺ 重設</button>
+    </div>
+  </section>
+
+  <!-- ===== Controls + Readout ===== -->
+  <section class="grid2">
+    <div class="card controls">
+      <h3 class="section-title">A 與 B（液體）</h3>
+
+      <div class="row inline">
+        <label>材質 A／B</label>
+        <select id="matA"></select>
+        <select id="matB"></select>
+      </div>
+      <div class="row"><label>質量 mₐ (kg)</label><input id="mA" type="range" min="0.05" max="3" step="0.05" value="0.50"><div class="value" id="mAv">0.50</div></div>
+      <div class="row"><label>溫度 Tₐ (°C)</label><input id="tA" type="range" min="0" max="95" step="1" value="70"><div class="value" id="tAv">70</div></div>
+      <div class="row"><label>質量 m_b (kg)</label><input id="mB" type="range" min="0.05" max="3" step="0.05" value="0.80"><div class="value" id="mBv">0.80</div></div>
+      <div class="row"><label>溫度 T_b (°C)</label><input id="tB" type="range" min="0" max="95" step="1" value="20"><div class="value" id="tBv">20</div></div>
+
+      <h3 class="section-title">量熱器與冰塊（選用）</h3>
+      <div class="row"><label>量熱器等效熱容 C_cal (J/K)</label><input id="Ccal" type="range" min="0" max="1200" step="20" value="200"><div class="value" id="Ccalv">200</div></div>
+      <div class="row"><label>量熱器初溫 T_cal (°C)</label><input id="Tcal" type="range" min="0" max="95" step="1" value="20"><div class="value" id="Tcalv">20</div></div>
+      <div class="row"><label>冰塊質量 m_ice (kg, 0°C)</label><input id="mIce" type="range" min="0" max="1.0" step="0.01" value="0.00"><div class="value" id="mIcev">0.00</div></div>
+
+      <div class="callout warn" id="noteIce">提示：冰塊設定為 0°C。若熱量不足以全部融化，最終溫度為 0°C，並顯示剩餘冰量。</div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">讀數／結果</h3>
+      <div class="readout">
+        <div class="item"><div class="label">平衡溫度 \(T_f\)</div><div class="value"><span id="Tf">—</span> °C</div></div>
+        <div class="item"><div class="label">A 釋／吸熱 \(Q_a\)</div><div class="value"><span id="Qa">—</span> J</div></div>
+        <div class="item"><div class="label">B 釋／吸熱 \(Q_b\)</div><div class="value"><span id="Qb">—</span> J</div></div>
+        <div class="item"><div class="label">量熱器 \(Q_{cal}\)</div><div class="value"><span id="Qcal">—</span> J</div></div>
+        <div class="item"><div class="label">冰塊融化/升溫 \(Q_{ice}\)</div><div class="value"><span id="Qice">—</span> J</div></div>
+        <div class="sep"></div>
+        <div class="item"><div class="label">能量守恆檢查 \(\sum Q\)</div><div class="value"><span id="sumQ">—</span> J</div></div>
+        <div class="item"><div class="label">冰塊殘留</div><div class="value"><span id="iceLeft">—</span> kg</div></div>
+      </div>
+
+      <div class="callout" id="tipBox">
+        沒有冰塊時：\( T_f=\dfrac{m_a c_a T_a + m_b c_b T_b + C_{cal} T_{cal}}{m_a c_a + m_b c_b + C_{cal}} \)。
+        有冰塊時會自動判斷「先融化是否足夠」，再求 \(T_f\)。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Charts ===== -->
+  <section class="card">
+    <h3 class="section-title">溫度變化（示意動態，非精確熱傳）</h3>
+    <canvas id="chart" width="1000" height="300"></canvas>
+  </section>
+
+  <!-- ===== Learning Tabs ===== -->
+  <section class="card tabs">
+    <div class="tab-list" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="law">定律內容</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="formula">公式表示</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="diagram">圖像理解</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="scope">適用範圍</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="apps">常見應用</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="quiz">教學延伸問題</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="ans">延伸問題解答</button>
+    </div>
+
+    <div id="panel-law" class="tab-panel active">
+      <ul>
+        <li>熱量：\(Q=mc\Delta T\)。\(m\)：質量（kg），\(c\)：比熱（J/kg·K），\(\Delta T\)：溫度變化（K 或 °C）。</li>
+        <li>量熱（理想）：隔熱良好，無熱損；混合達平衡溫度 \(T_f\) 後 \(\sum Q = 0\)。</li>
+        <li>量熱器：用單一等效熱容 \(C_{cal}\) 表示其吸放熱 \(Q_{cal}=C_{cal}(T_f-T_{cal})\)。</li>
+        <li>相變（冰塊）：先計算是否有足夠熱量使冰塊全部融化 \(Q_{melt}=m_{ice}L_f\)，再與總熱量平衡。</li>
+      </ul>
+    </div>
+
+    <div id="panel-formula" class="tab-panel">
+      <div class="formula-block">
+        無相變：\(
+        T_f=\frac{m_a c_a T_a + m_b c_b T_b + C_{cal}T_{cal}}
+                 {m_a c_a + m_b c_b + C_{cal}}
+        \)
+      </div>
+      <div class="formula-block">
+        有冰塊（0°C）時：先算溫熱端降到 0°C 可提供的熱量 \(Q_{warm\to0}\)，若
+        \(Q_{warm\to0}\le Q_{melt}=m_{ice}L_f\)，則 \(T_f=0^\circ C\) 且尚有冰未融。<br/>
+        若 \(Q_{warm\to0}>Q_{melt}\)，餘熱 \(Q_{rem}\) 用來把系統由 0°C 升到 \(T_f\)：\(
+          T_f=\dfrac{Q_{rem}}{(m_a c_a^\*, m_b c_b^\*,\, C_{cal},\, m_{ice}c_{water})\text{ 之和}}
+        \)（此時冰已融為水）。
+      </div>
+    </div>
+
+    <div id="panel-diagram" class="tab-panel">
+      <p>可把每一個物件視為一個「熱庫」。熱會自高溫流向低溫，直到各熱庫溫度相同。面積代表「熱容量」
+        \(m c\) 或 \(C_{cal}\)。加入冰塊時，先填滿「相變階梯」（潛熱），再開始升溫。</p>
+    </div>
+
+    <div id="panel-scope" class="tab-panel">
+      <ul>
+        <li>假設：系統隔熱良好（無熱損）、混合充分、比熱與相變潛熱與溫度無關（近似）。</li>
+        <li>限制：若存在蒸發、容器熱損、或溫差極大，比熱/潛熱可能隨溫變化，需更精細模型。</li>
+      </ul>
+    </div>
+
+    <div id="panel-apps" class="tab-panel">
+      <ul>
+        <li>咖啡加奶、調溫水浴、材料比熱量測。</li>
+        <li>用已知熱容的量熱器量測未知樣品的比熱。</li>
+      </ul>
+    </div>
+
+    <div id="panel-quiz" class="tab-panel">
+      <ol>
+        <li>0.2 kg、80°C 的水與 0.3 kg、20°C 的水混合，忽略量熱器，求 \(T_f\)。</li>
+        <li>上題若容器等效熱容 200 J/K、容器初溫 20°C，\(T_f\) 變多少？</li>
+        <li>0.05 kg 的冰（0°C）丟入 0.3 kg、40°C 的水，容器可忽略。最終溫度與殘冰？</li>
+      </ol>
+    </div>
+
+    <div id="panel-ans" class="tab-panel">
+      <details open><summary><b>題 1</b></summary>
+        水 \(c=4186\)。\(T_f=\frac{0.2\cdot4186\cdot80+0.3\cdot4186\cdot20}{(0.2+0.3)\cdot4186}=44^\circ C\)（約）。
+      </details>
+      <details><summary><b>題 2</b></summary>
+        分母加 \(C_{cal}\)，分子加 \(C_{cal}T_{cal}\)；\(T_f\) 會略降（因容器被加熱）。
+      </details>
+      <details><summary><b>題 3</b></summary>
+        先算熱量是否足以融冰（\(L_f≈334\,000\) J/kg），再依公式求 \(T_f\) 或回報 0°C 與殘冰量。
+      </details>
+    </div>
+  </section>
+
+  <div class="footer">© Calorimetry Lab · 無任務版（支援深/淺色主題切換）</div>
+</div>
+
+<script>
+/* ===== Materials (J/kg·K) ===== */
+const MATERIALS = [
+  {name:"水 Water", c:4186},
+  {name:"乙醇 Ethanol", c:2440},
+  {name:"橄欖油 Olive oil", c:1970},
+  {name:"牛奶 Milk(近似水)", c:3900},
+  {name:"鋁 Aluminum", c:900},
+  {name:"銅 Copper", c:385},
+  {name:"鐵/鋼 Iron/Steel", c:450},
+];
+
+/* ===== Shortcuts ===== */
+const $ = id => document.getElementById(id);
+const fmt = (n, d=2) => Number.isFinite(n) ? (Math.abs(n)<1e-3 ? n.toExponential(1) : n.toFixed(d)) : "—";
+
+/* ===== Theme toggle ===== */
+const root = document.documentElement;
+const themeBtn = $('themeToggle');
+function setTheme(t){ root.setAttribute('data-theme', t); themeBtn.textContent = t==='light'?'🌞 主題：淺色':'🌗 主題：深色'; localStorage.setItem('cal_theme',t); }
+setTheme(localStorage.getItem('cal_theme') || 'dark');
+themeBtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='light'?'dark':'light'));
+
+/* ===== Populate material selects ===== */
+function fillMaterials(sel){
+  MATERIALS.forEach((m,i)=>{
+    const o=document.createElement('option'); o.value=i; o.textContent=`${m.name}（c=${m.c}）`; sel.appendChild(o);
+  });
+}
+fillMaterials($('matA')); fillMaterials($('matB'));
+$('matA').value = 0; $('matB').value = 0;
+
+/* ===== Bind sliders ===== */
+const ids = ['mA','tA','mB','tB','Ccal','Tcal','mIce'];
+const labels = ['mAv','tAv','mBv','tBv','Ccalv','Tcalv','mIcev'].map(id=>$(id));
+ids.forEach((id, i)=>{
+  const el=$(id);
+  el.addEventListener('input', ()=>{
+    labels[i].textContent = el.value;
+  });
+  labels[i].textContent = el.value;
+});
+
+/* ===== Charts (simple easing to Tf) ===== */
+const chart = $('chart'), ctx = chart.getContext('2d');
+let anim=null;
+function drawCurve(series){
+  ctx.clearRect(0,0,chart.width,chart.height);
+  const pad=30, W=chart.width-pad*2, H=chart.height-pad*2;
+  // axes
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--muted'); ctx.globalAlpha=0.5;
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(pad, pad+H); ctx.lineTo(pad+W, pad+H); ctx.stroke(); ctx.globalAlpha=1;
+
+  const tMax = Math.max(...series.map(s=>s.data.length));
+  function plot(s,color){
+    const ys=s.data, n=ys.length;
+    if(n<2) return;
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
+    ys.forEach((y,i)=>{
+      const x = pad + i*(W/(tMax-1));
+      const yv = pad+H - (y - s.min)/(s.max-s.min || 1) * H;
+      i?ctx.lineTo(x,yv):ctx.moveTo(x,yv);
+    });
+    ctx.stroke();
+  }
+  series.forEach((s,idx)=>plot(s, ['#60a5fa','#f97316','#10b981','#a78bfa'][idx%4]));
+}
+
+/* ===== Core calculation ===== */
+const Lf = 334000;         // 冰的熔化潛熱 J/kg
+const cW = 4186;           // 水的比熱
+
+function compute(){
+  const mA=+$('mA').value, tA=+$('tA').value, cA=MATERIALS[+$('matA').value].c;
+  const mB=+$('mB').value, tB=+$('tB').value, cB=MATERIALS[+$('matB').value].c;
+  const Ccal=+$('Ccal').value, Tcal=+$('Tcal').value;
+  const mIce=+$('mIce').value;
+
+  let Tf, Qa, Qb, Qcal, Qice = 0, iceLeft = 0;
+
+  if(mIce<=0){
+    // Analytical mix (no phase change)
+    const denom = mA*cA + mB*cB + Ccal;
+    const numer = mA*cA*tA + mB*cB*tB + Ccal*Tcal;
+    Tf = numer/denom;
+
+    Qa = mA*cA*(Tf - tA);
+    Qb = mB*cB*(Tf - tB);
+    Qcal = Ccal*(Tf - Tcal);
+  }else{
+    // With ice at 0°C
+    // 1) heat available if everything cooled/warmed to 0°C
+    const Qwarm_to0 =
+      (tA>0 ? mA*cA*(tA-0) : 0) +
+      (tB>0 ? mB*cB*(tB-0) : 0) +
+      (Tcal>0 ? Ccal*(Tcal-0) : 0);
+
+    const Qmelt = mIce * Lf;
+
+    if(Qwarm_to0 <= Qmelt){
+      // not enough to melt all ice
+      Tf = 0;
+      const melted = Qwarm_to0 / Lf;
+      iceLeft = Math.max(mIce - melted, 0);
+      // Energies: all warm parts cool to 0, some ice melts
+      Qa = (tA>0 ? mA*cA*(0 - tA) : mA*cA*(0 - tA)); // both sides to 0; sign convention: positive = heat absorbed
+      Qb = (tB>0 ? mB*cB*(0 - tB) : mB*cB*(0 - tB));
+      Qcal = (Tcal>0 ? Ccal*(0 - Tcal) : Ccal*(0 - Tcal));
+      Qice = melted*Lf; // absorbed by ice (positive)
+    }else{
+      // all ice melts, remaining heat raises temperature from 0 to Tf
+      const Qrem = Qwarm_to0 - Qmelt;
+      const cap = ( (tA>0? mA*cA: mA*cA) + (tB>0? mB*cB: mB*cB) + Ccal + mIce*cW );
+      // 其實不論正負，降到 0 後大家都在 0 起步升溫，因此總熱容 = 上式
+      Tf = Qrem / cap;
+
+      // Energies（相對原始初溫）：
+      // A：若 tA>0，先放出 mA cA tA，後在升溫階段再吸收 mA cA Tf → 合併：mA cA (Tf - tA)
+      //    若 tA=0，直接 mA cA Tf；若 tA<0（不給負溫 slider），此處略
+      Qa = mA*cA*(Tf - tA);
+      Qb = mB*cB*(Tf - tB);
+      Qcal = Ccal*(Tf - Tcal);
+      Qice = mIce*Lf + mIce*cW*(Tf - 0); // 融化＋升溫
+      iceLeft = 0;
+    }
+  }
+
+  const sumQ = Qa + Qb + Qcal + Qice;
+
+  // Write readouts
+  $('Tf').textContent = fmt(Tf,2);
+  $('Qa').textContent = fmt(Qa,1);
+  $('Qb').textContent = fmt(Qb,1);
+  $('Qcal').textContent = fmt(Qcal,1);
+  $('Qice').textContent = fmt(Qice,1);
+  $('sumQ').textContent = fmt(sumQ,1);
+  $('iceLeft').textContent = fmt(iceLeft,3);
+
+  return {Tf, Qa, Qb, Qcal, Qice};
+}
+
+/* ===== Simple time animation to Tf ===== */
+function runAnimation(TinitA, TinitB, TinitCal, Tf){
+  if(anim) cancelAnimationFrame(anim);
+  const steps = 180; const k = 0.035; // easing rate
+  const sA = {data:[TinitA], min:Math.min(0,TinitA,Tf), max:Math.max(100,TinitA,Tf)};
+  const sB = {data:[TinitB], min:sA.min, max:sA.max};
+  const sC = {data:[TinitCal], min:sA.min, max:sA.max};
+
+  let i=1;
+  function tick(){
+    sA.data.push( sA.data[i-1] + (Tf - sA.data[i-1]) * (1 - Math.exp(-k)) );
+    sB.data.push( sB.data[i-1] + (Tf - sB.data[i-1]) * (1 - Math.exp(-k*1.1)) );
+    sC.data.push( sC.data[i-1] + (Tf - sC.data[i-1]) * (1 - Math.exp(-k*0.9)) );
+    drawCurve([
+      {data:sA.data, min:sA.min, max:sA.max},
+      {data:sB.data, min:sA.min, max:sA.max},
+      {data:sC.data, min:sA.min, max:sA.max},
+    ]);
+    i++; if(i<=steps) anim = requestAnimationFrame(tick);
+  }
+  drawCurve([{data:sA.data,min:sA.min,max:sA.max},{data:sB.data,min:sA.min,max:sA.max},{data:sC.data,min:sA.min,max:sA.max}]);
+  anim = requestAnimationFrame(tick);
+}
+
+/* ===== Tabs ===== */
+const tabs = document.querySelectorAll('.tab-list .tab');
+const panels = {
+  law:$('panel-law'), formula:$('panel-formula'), diagram:$('panel-diagram'),
+  scope:$('panel-scope'), apps:$('panel-apps'), quiz:$('panel-quiz'), ans:$('panel-ans')
+};
+tabs.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.setAttribute('aria-selected','false'));
+    btn.setAttribute('aria-selected','true');
+    Object.values(panels).forEach(p=>p.classList.remove('active'));
+    panels[btn.dataset.tab].classList.add('active');
+  });
+});
+
+/* ===== Buttons ===== */
+$('runSim').addEventListener('click', ()=>{
+  const tA=+$('tA').value, tB=+$('tB').value, tC=+$('Tcal').value;
+  const {Tf} = compute();
+  if(Number.isFinite(Tf)) runAnimation(tA,tB,tC,Tf);
+});
+$('reset').addEventListener('click', ()=>{
+  $('matA').value=0; $('matB').value=0;
+  $('mA').value=0.5; $('tA').value=70; $('mB').value=0.8; $('tB').value=20;
+  $('Ccal').value=200; $('Tcal').value=20; $('mIce').value=0;
+  ids.forEach((id,i)=> labels[i].textContent = $(id).value );
+  compute(); ctx.clearRect(0,0,chart.width,chart.height);
+});
+
+/* ===== Init ===== */
+compute();
+</script>
+</body>
+</html>

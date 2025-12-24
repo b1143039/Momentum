@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Geometric Optics｜薄透鏡成像 · 無任務＋主題切換</title>
+
+<style>
+/* ===== Theme variables (Dark as default) ===== */
+:root{
+  --bg:#0b1020; --panel:#11162f; --card:#131a38; --muted:#9fb0d0; --text:#eaf0ff;
+  --border:rgba(255,255,255,.1); --brand:#6ee7ff; --brand-2:#a78bfa; --accent:#34d399;
+  --shadow:0 10px 30px rgba(0,0,0,.35); --radius:16px;
+  --canvas-bg:rgba(255,255,255,.03);
+}
+:root[data-theme="light"]{
+  --bg:#f6f8fb; --panel:#ffffff; --card:#ffffff; --muted:#475569; --text:#0b1020;
+  --border:rgba(0,0,0,.12); --brand:#0ea5e9; --brand-2:#7c3aed; --accent:#16a34a;
+  --shadow:0 8px 24px rgba(0,0,0,.10);
+  --canvas-bg:rgba(0,0,0,.04);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, "Noto Sans TC";
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(167,139,250,.25), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgba(110,231,255,.18), transparent 60%),
+    var(--bg);
+  color:var(--text); margin:0;
+}
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(900px 500px at 0% -10%, rgba(14,165,233,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(124,58,237,.08), transparent 60%),
+    var(--bg);
+}
+
+.container{max-width:1100px;margin:0 auto;padding:26px 16px}
+
+/* Hero */
+.hero{
+  border-radius:20px;background:linear-gradient(135deg, rgba(110,231,255,.18), rgba(167,139,250,.22));
+  border:1px solid var(--border);padding:22px 18px;box-shadow:var(--shadow);
+  display:flex;justify-content:space-between;gap:16px;align-items:center
+}
+h1{margin:0 0 6px;font-size:28px} .sub{color:var(--muted); font-size:14px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.badge{background:rgba(255,255,255,.12); border:1px solid var(--border); color:var(--text);
+  padding:4px 10px;border-radius:999px; font-size:12px}
+:root[data-theme="light"] .badge{background:rgba(0,0,0,.04)}
+
+/* Buttons */
+button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+button:hover{filter:brightness(1.06)}
+button.primary{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#05222b; border-color:transparent}
+:root[data-theme="light"] button.primary{color:#ffffff}
+
+/* Info Area */
+.info-grid{margin-top:14px;display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow)}
+.controls .row{display:flex;gap:12px;align-items:center;margin:8px 0}
+.controls label{min-width:160px;color:var(--muted);font-size:14px}
+.controls .value{width:80px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+select{height:36px;border-radius:10px;border:1px solid var(--border);background:#0f1530;color:var(--text);padding:0 10px}
+:root[data-theme="light"] select{background:#ffffff;color:var(--text)}
+
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;font-variant-numeric:tabular-nums}
+.item .label{font-size:14px;color:var(--muted);margin-bottom:4px}
+.item .value{font-size:20px;font-weight:800}
+.sep{grid-column:1/-1;height:1px;background:var(--border)}
+.callout{border-left:4px solid var(--accent);background:color-mix(in srgb, var(--accent) 15%, transparent);padding:10px 12px;border-radius:10px;margin:8px 0}
+
+/* Canvas */
+.sim-card{margin-top:14px}
+canvas{width:100%;height:420px;border:1px dashed var(--border);border-radius:12px;background:var(--canvas-bg)}
+
+/* Tabs */
+.tabs{margin-top:16px}
+.tab-list{display:flex;gap:8px;flex-wrap:wrap}
+.tab-list button{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:15px}
+.tab-list button[aria-selected="true"]{background:linear-gradient(135deg, rgba(110,231,255,.25), rgba(167,139,250,.25));color:var(--text);
+  box-shadow:0 0 12px rgba(110,231,255,.35)}
+.tab-panel{display:none;margin-top:12px;font-size:17px;line-height:1.8}
+.tab-panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.formula-block{text-align:center;font-size:19px;background:rgba(255,255,255,.08);border:1px dashed var(--border);border-radius:10px;margin:10px 0;padding:10px}
+:root[data-theme="light"] .formula-block{background:rgba(0,0,0,.04)}
+
+@media (max-width:900px){
+  .info-grid{grid-template-columns:1fr}
+  canvas{height:360px}
+}
+.footer{color:var(--muted);font-size:12px;margin-top:20px;text-align:center}
+</style>
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)'],['$','$']]}};</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container">
+  <!-- Hero -->
+  <section class="hero">
+    <div>
+      <h1>Geometric Optics｜薄透鏡成像</h1>
+      <div class="sub">互動光線圖：使用薄透鏡公式 \( \frac1f=\frac1v+\frac1u \)，對照放大率 \(m=-v/u\)。</div>
+      <div class="badges"><span class="badge">主光線作圖</span><span class="badge">虛/實像</span></div>
+    </div>
+    <div style="display:flex; gap:8px">
+      <button id="themeToggle" class="primary" type="button">🌗 主題：深色</button>
+    </div>
+  </section>
+
+  <!-- Controls + Readout -->
+  <section class="info-grid">
+    <div class="card controls">
+      <div class="row"><label>鏡片型態</label>
+        <select id="lensType">
+          <option value="convex">凸透鏡（f&gt;0）</option>
+          <option value="concave">凹透鏡（f&lt;0）</option>
+        </select>
+      </div>
+      <div class="row"><label>焦距 |f| (cm)</label><input id="f" type="range" min="4" max="40" step="1" value="15"><div id="fv" class="value">15</div></div>
+      <div class="row"><label>物距 u (cm)（可拖曳）</label><input id="u" type="range" min="6" max="120" step="1" value="40"><div id="uv" class="value">40</div></div>
+      <div class="row"><label>物高 h (cm)（可拖曳）</label><input id="h" type="range" min="2" max="24" step="1" value="8"><div id="hv" class="value">8</div></div>
+      <div class="row"><label>顯示選項</label>
+        <select id="raySet">
+          <option value="all">三條主光線</option>
+          <option value="two">兩條（平行&穿心）</option>
+          <option value="none">隱藏光線</option>
+        </select>
+      </div>
+      <div class="callout">中線為主光軸；紫色圓點是焦點 F、F'。粉色為物、綠/黃為像（實像/虛像）。</div>
+    </div>
+
+    <div class="card">
+      <div class="readout">
+        <div class="item"><div class="label">物距 u</div><div class="value"><span id="ru">—</span> cm</div></div>
+        <div class="item"><div class="label">像距 v</div><div class="value"><span id="rv">—</span> cm</div></div>
+        <div class="item"><div class="label">放大率 m</div><div class="value"><span id="rm">—</span></div></div>
+        <div class="item"><div class="label">像高 h'</div><div class="value"><span id="rh">—</span> cm</div></div>
+        <div class="sep"></div>
+        <div class="item"><div class="label">像別</div><div class="value" id="rtype">—</div></div>
+        <div class="item"><div class="label">關係式</div><div class="value" id="rEq">\( \frac1f=\frac1v+\frac1u \)</div></div>
+      </div>
+      <div class="callout" id="tipBox">拖曳左側的粉色「物體箭頭」可同時改 u 與 h；也可用滑桿微調。</div>
+    </div>
+  </section>
+
+  <!-- Full-width Canvas -->
+  <section class="card sim-card">
+    <canvas id="sim" width="1000" height="420"></canvas>
+  </section>
+
+  <!-- Tabs -->
+  <section class="tabs card">
+    <div class="tab-list" role="tablist">
+      <button role="tab" class="tab" aria-selected="true" data-tab="law">定律內容</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="formula">公式表示</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="diagram">圖像理解</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="scope">適用範圍</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="apps">常見應用</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="quiz">教學延伸問題</button>
+      <button role="tab" class="tab" aria-selected="false" data-tab="ans">延伸問題解答</button>
+    </div>
+
+    <div id="panel-law" class="tab-panel active">
+      <ul>
+        <li>薄透鏡公式：\( \frac1f=\frac1v+\frac1u \)，右正左負；一般把物放在左側 \(u>0\)。</li>
+        <li>放大率：\( m=-\frac{v}{u}=\frac{h'}{h} \)。\(m<0\) 倒立實像；\(m>0\) 正立虛像。</li>
+        <li>三條主光線（凸透鏡）：平行→過焦點、過焦點→平行、過光心→不偏折。</li>
+      </ul>
+    </div>
+
+    <div id="panel-formula" class="tab-panel">
+      <div class="formula-block">\( \displaystyle \frac1f=\frac1v+\frac1u \quad,\quad m=-\frac{v}{u}=\frac{h'}{h} \)</div>
+      <div class="formula-block">特例：\(u=2f \Rightarrow v=2f,\, m=-1\)。\(u\in(f,2f)\Rightarrow |m|>1\)。\(u&lt;f\Rightarrow v&lt;0\) 虛像。</div>
+    </div>
+
+    <div id="panel-diagram" class="tab-panel">
+      <p>作圖要點：物體頂端發出光線（至少兩條），經透鏡後交會處就是像。若在光軸同側交會，像為虛像（以虛線延長表示）。</p>
+    </div>
+
+    <div id="panel-scope" class="tab-panel">
+      <ul>
+        <li>薄透鏡近似（厚度遠小於 u、v、f）。</li>
+        <li>小角度近軸（paraxial）光線；離軸太遠會有像差。</li>
+      </ul>
+    </div>
+
+    <div id="panel-apps" class="tab-panel">
+      <ul>
+        <li>相機鏡頭、投影機、放大鏡。</li>
+        <li>近視/遠視矯正（凹/凸透鏡）。</li>
+      </ul>
+    </div>
+
+    <div id="panel-quiz" class="tab-panel">
+      <ol>
+        <li>凸透鏡 \(f=10\) cm，\(u=30\) cm：求 \(v\)、\(m\)、像別。</li>
+        <li>\(u=2f\) 時像的性質？當 \(u\) 接近 \(f\) 時又如何？</li>
+        <li>凹透鏡 \(f=-12\) cm，\(u=24\) cm：求 \(v\)、\(m\)、像別。</li>
+      </ol>
+    </div>
+
+    <div id="panel-ans" class="tab-panel">
+      <details open><summary><b>題 1</b></summary>
+        \(1/v=1/10-1/30=2/30\Rightarrow v=15\) cm；\(m=-v/u=-0.5\) 倒立縮小實像。
+      </details>
+      <details><summary><b>題 2</b></summary>
+        \(u=2f\Rightarrow v=2f, m=-1\) 等大倒立；當 \(u\to f^+\) 時 \(v\to +\infty\)（遠處成像）。
+      </details>
+      <details><summary><b>題 3</b></summary>
+        \(1/v=1/(-12)-1/24=-1/12\Rightarrow v=-12\) cm；\(m=-(-12)/24=+0.5\) 正立縮小虛像。
+      </details>
+    </div>
+  </section>
+
+  <div class="footer">© Geometric Optics Lab · 無任務版（支援深/淺色主題切換）</div>
+</div>
+
+<script>
+/* ---------- Tabs ---------- */
+const tabs=document.querySelectorAll('.tab-list .tab');
+const panels={
+  law:document.getElementById('panel-law'),
+  formula:document.getElementById('panel-formula'),
+  diagram:document.getElementById('panel-diagram'),
+  scope:document.getElementById('panel-scope'),
+  apps:document.getElementById('panel-apps'),
+  quiz:document.getElementById('panel-quiz'),
+  ans:document.getElementById('panel-ans'),
+};
+tabs.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.setAttribute('aria-selected','false'));
+    btn.setAttribute('aria-selected','true');
+    Object.values(panels).forEach(p=>p.classList.remove('active'));
+    panels[btn.dataset.tab].classList.add('active');
+  });
+});
+
+/* ---------- Theme toggle (dark / light) ---------- */
+const root=document.documentElement;
+const themeBtn=document.getElementById('themeToggle');
+function setTheme(t){
+  root.setAttribute('data-theme',t);
+  themeBtn.textContent = t==='light' ? '🌞 主題：淺色' : '🌗 主題：深色';
+  localStorage.setItem('geom_theme', t);
+}
+setTheme(localStorage.getItem('geom_theme') || 'dark');
+themeBtn.addEventListener('click',()=> setTheme(root.getAttribute('data-theme')==='light'?'dark':'light'));
+
+/* ---------- Helpers ---------- */
+const $=id=>document.getElementById(id);
+const fmt=n=> (Math.abs(n)<1e-3? n.toExponential(1): n.toFixed(2));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+/* ---------- Controls & state ---------- */
+const canvas=$("sim"), ctx=canvas.getContext("2d");
+const lensTypeSel=$("lensType"), fSl=$("f"), uSl=$("u"), hSl=$("h"), raySel=$("raySet");
+const labels={fv:$("fv"), uv:$("uv"), hv:$("hv")};
+function syncLabels(){ labels.fv.textContent=fSl.value; labels.uv.textContent=uSl.value; labels.hv.textContent=hSl.value; }
+[lensTypeSel,fSl,uSl,hSl,raySel].forEach(el=>el.addEventListener('input',()=>{syncLabels(); draw();}));
+
+/* ---------- Optical model ---------- */
+let lensType="convex"; // convex f>0 ; concave f<0
+let f=+fSl.value, u=+uSl.value, h=+hSl.value; // cm
+const pxPerCm=6; // scale
+const xLens=canvas.width/2; const yAxis=canvas.height/2;
+let dragging=null; // "object" | null
+function getParams(){
+  lensType=lensTypeSel.value; f=(lensType==='convex'? +fSl.value : -+fSl.value);
+  u=+uSl.value; h=+hSl.value;
+  // thin lens: 1/f=1/v+1/u → v = (f u)/(u-f)
+  let v = (f*u)/(u - f);
+  let m = -v/u;
+  let h2 = m*h;
+  return {f,u,v,m,h,h2};
+}
+
+/* ---------- Draw ---------- */
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const {f,u,v,m,h,h2}=getParams();
+
+  // Axis
+  ctx.strokeStyle="rgba(255,255,255,.15)"; if(root.getAttribute('data-theme')==='light') ctx.strokeStyle="rgba(0,0,0,.15)";
+  ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(20,yAxis); ctx.lineTo(canvas.width-20,yAxis); ctx.stroke();
+
+  // Lens
+  drawLens(xLens, yAxis, lensType);
+  drawFocus(xLens, yAxis, f);
+
+  // Object & Image arrows
+  const xObj=xLens - u*pxPerCm;
+  drawArrow(xObj, yAxis, h*pxPerCm, "#f87171");
+  const xImg=xLens + v*pxPerCm;
+  const isReal = v>0;
+  drawArrow(xImg, yAxis, (h2)*pxPerCm, isReal?"#22c55e":"#eab308", !isReal);
+
+  // Rays
+  if(raySel.value!=="none"){ drawRays(xObj,yAxis,h*pxPerCm,xLens,f,isReal,v); }
+
+  // Readouts
+  $("ru").textContent = fmt(u);
+  $("rv").textContent = isFinite(v)? fmt(v): "∞";
+  $("rm").textContent = isFinite(m)? fmt(m): "—";
+  $("rh").textContent = isFinite(h2)? fmt(h2): "—";
+  $("rtype").textContent = !isFinite(v) ? "在無窮遠" : (isReal? "倒立實像":"正立虛像");
+  $("rEq").textContent = "1/f = 1/v + 1/u";
+}
+
+/* Lens drawing */
+function drawLens(xc,yc,type){
+  ctx.save();
+  ctx.translate(xc,yc);
+  const h=160, w=18;
+  ctx.fillStyle="rgba(110,231,255,.18)";
+  ctx.strokeStyle="rgba(110,231,255,.55)"; ctx.lineWidth=2;
+  ctx.beginPath();
+  if(type==="convex"){
+    ctx.moveTo(-w, -h/2);
+    ctx.quadraticCurveTo(12, -h/4, 0, 0);
+    ctx.quadraticCurveTo(12,  h/4, -w, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.quadraticCurveTo(-12,  h/4, 0, 0);
+    ctx.quadraticCurveTo(-12, -h/4, w, -h/2);
+    ctx.closePath();
+  }else{
+    ctx.moveTo(-w, -h/2);
+    ctx.quadraticCurveTo(-18, -h/4, -w, 0);
+    ctx.quadraticCurveTo(-18,  h/4, -w, h/2);
+    ctx.lineTo(w, h/2);
+    ctx.quadraticCurveTo(18,  h/4,  w, 0);
+    ctx.quadraticCurveTo(18, -h/4,  w, -h/2);
+    ctx.closePath();
+  }
+  ctx.fill(); ctx.stroke();
+  // principal plane
+  ctx.strokeStyle="rgba(255,255,255,.35)"; if(root.getAttribute('data-theme')==='light') ctx.strokeStyle="rgba(0,0,0,.3)";
+  ctx.beginPath(); ctx.moveTo(0,-h/2-6); ctx.lineTo(0,h/2+6); ctx.stroke();
+  ctx.restore();
+}
+
+/* Focus markers */
+function drawFocus(xc,yc,f){
+  const fpx=Math.abs(f)*pxPerCm;
+  const sign=Math.sign(f)||1;
+  const xF1=xc - sign*fpx, xF2=xc + sign*fpx;
+  ctx.fillStyle="#a78bfa";
+  [xF1,xF2].forEach(x=>{ctx.beginPath(); ctx.arc(x,yc,5,0,Math.PI*2); ctx.fill();});
+  ctx.fillStyle="var(--muted)";
+  ctx.fillText("F", xF1-10, yc-8); ctx.fillText("F'", xF2+6, yc-8);
+}
+
+/* Arrow utility */
+function drawArrow(x0,y0,hpx,color,dashed=false){
+  const head=10, shaft=2;
+  ctx.save();
+  if(dashed){ ctx.setLineDash([6,6]); }
+  ctx.strokeStyle=color; ctx.lineWidth=shaft; ctx.beginPath();
+  ctx.moveTo(x0,y0); ctx.lineTo(x0,y0 - hpx); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=color; ctx.beginPath();
+  const dir = hpx>=0? -1: 1;
+  ctx.moveTo(x0, y0 - hpx);
+  ctx.lineTo(x0-8, y0 - hpx + dir*12);
+  ctx.lineTo(x0+8, y0 - hpx + dir*12);
+  ctx.closePath(); ctx.fill();
+}
+
+/* Rays drawing */
+function drawRays(xObj,y0,hpx,xLens,f,isReal,v){
+  const xTop = xObj, yTop = y0 - hpx;
+  const sign=Math.sign(f)||1;
+  const fpx=Math.abs(f)*pxPerCm;
+  const xF1=xLens - sign*fpx, xF2=xLens + sign*fpx;
+
+  ctx.lineWidth=2;
+
+  // Ray 1: parallel → through F'
+  const yAtLens=yTop;
+  ctx.strokeStyle="#6ee7ff";
+  ctx.beginPath(); ctx.moveTo(xTop,yTop); ctx.lineTo(xLens,yAtLens); ctx.stroke();
+  const slope=(yAtLens - y0)/(xLens - (xF2));
+  const yEnd = yAtLens + slope*(canvas.width - xLens);
+  ctx.beginPath(); ctx.moveTo(xLens,yAtLens); ctx.lineTo(canvas.width-10, yEnd); ctx.stroke();
+  if(v<0){ // virtual back-projection
+    ctx.setLineDash([6,7]); ctx.beginPath(); ctx.moveTo(xLens,yAtLens);
+    ctx.lineTo(10, yAtLens - slope*(xLens-10)); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // Ray 2: through optical center
+  ctx.strokeStyle="#a78bfa";
+  ctx.beginPath(); ctx.moveTo(xTop,yTop);
+  const y2 = yTop + (canvas.width-10 - xTop) * ( (y0 - yTop)/(xLens - xTop) );
+  ctx.lineTo(canvas.width-10, y2); ctx.stroke();
+
+  // Ray 3: through F（object side）→ emerge parallel
+  if(raySel.value==="all"){
+    const slope3=(yTop - y0)/(xTop - xF1);
+    const yAtLens3 = yTop + slope3*(xLens - xTop);
+    ctx.strokeStyle="#34d399";
+    ctx.beginPath(); ctx.moveTo(xTop,yTop); ctx.lineTo(xLens,yAtLens3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xLens,yAtLens3); ctx.lineTo(canvas.width-10, yAtLens3);
+    ctx.strokeStyle="#34d399"; ctx.stroke();
+    if(v<0){ ctx.setLineDash([6,7]); ctx.beginPath(); ctx.moveTo(xLens,yAtLens3);
+      ctx.lineTo(10, yAtLens3); ctx.stroke(); ctx.setLineDash([]); }
+  }
+}
+
+/* ---------- Dragging (object position & height) ---------- */
+canvas.addEventListener('mousedown',e=>{
+  const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left; const y=e.clientY-rect.top;
+  const objX=xLens - (+uSl.value)*pxPerCm; const objY=yAxis - (+hSl.value)*pxPerCm;
+  if(Math.hypot(x-objX, y-objY)<22 || (Math.abs(x-objX)<12 && Math.abs(y-objY)<40)){
+    dragging={dx:x-objX, dy:y-objY};
+  }
+});
+window.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left; const y=e.clientY-rect.top;
+  let objX = x - dragging.dx;
+  let objTop = y - dragging.dy;
+  objX = clamp(objX, 40, xLens-20);
+  const newU = (xLens - objX)/pxPerCm;
+  const newH = clamp((yAxis - objTop)/pxPerCm, 2, 24);
+  uSl.value = newU.toFixed(0); hSl.value = newH.toFixed(0); syncLabels(); draw();
+});
+window.addEventListener('mouseup',()=>{ dragging=null; });
+
+/* ---------- Init ---------- */
+syncLabels(); draw();
+</script>
+</body>
+</html>
